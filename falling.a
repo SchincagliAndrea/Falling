@@ -1,0 +1,1238 @@
+!sl "var"
+;-------------------------------------------------------------------
+;                           FALLING BALL
+;                               FOR
+;                           COMMODORE C64
+;
+;   Code Schincaglia Andrea "Wanax" Graphics Saul Cross "Saulc12"
+;
+;					       RGCD COMPO 2014
+;-------------------------------------------------------------------
+		!source "falling_var.a" 
+		     
+        ; basic header
+
+		*= $0801
+		!byte $0b,$08
+		!word 2014
+		!byte $9e
+		!text "2061"
+		!byte 0,0,0
+        sei
+        ldx #$ff
+        txs
+        lda #$7f
+		sta $dc0d
+		sta $dd0d
+-       lda $d011
+        bpl -
+        ldx #$00         
+		txa
+-		sta	$02,x
+		inx
+		cpx #$fe
+		bne	-
+		jsr Copytorom
+restart
+		jsr ClearSid		
+		jsr Intro
+		lda #48
+		sta score
+		sta score+1
+		sta score+2		
+		lda #$00
+		sta balls
+		sta level
+		sta scoreexit
+		sta left_right
+		sta speedy
+		sta pressbutton
+		sta frame		
+		sta gameover
+		sta spike	
+		sta player_anim_pointer
+		sta player_anim_delay                    
+        sta AKTUELLE_ZEILE_UNTEN
+        sta TILE_INDEX
+        sta player_anim_pointer  
+        sta player_anim_delay 
+        sta explode_anim_delay 
+        sta explode_anim_pointer      
+		sta scrollonoff  
+		sta posballx            
+		sta posbally 
+		sta player_anim_delay 
+        sta player_anim_pointer 
+        sta removecollision0
+        sta removecollision1         		                
+		lda #$01
+		sta gravity
+		sta activecheat
+		lda #$03
+		sta delay
+		lda #time
+		sta scorelevel
+		lda #$0b
+		sta $d011
+		lda #$01
+        jsr Music-3
+        lda #$5e
+		sta $df
+        jsr Clearscreen            
+        jsr Sprite
+        jsr Setupirqgame         
+        jsr Vblank        
+        lda #%00001011
+        sta $d011
+        ldx level
+        lda leveltbllo,x
+        sta SCREEN_DATA_ZEIGER_UNTEN
+        lda leveltblhi,x
+        sta SCREEN_DATA_ZEIGER_UNTEN + 1           
+Loop      
+	    lda AKTUELLE_ZEILE_UNTEN
+        cmp #18
+		bne cont0		 
+		lda #%11100000
+		sta $d015
+		lda #$10
+		ora $d011
+		sta $d011		
+		jmp Maingame                 
+cont0
+		lda #0
+        sta SCROLL_STATUS                
+        jsr ScrollUp        
+        lda SCROLL_STATUS
+        bne +          
+        jmp Loop                                                   
++       and #$02
+        bne .AktivenBildschirmUmschalten                             
+        jmp .ScrollRegisterAktualisieren  
+         
+.AktivenBildschirmUmschalten          
+        ldy AKTIVER_BILDSCHIRM
+        lda VIC_BILDSCHIRM_ZEIGER_TABELLE,y
+        sta VIC_MEMORY_CONTROL
+.ScrollRegisterAktualisieren
+        lda SCROLL_SOFTSCROLL_WERT              
+        ora $10      
+        sta VIC_CONTROL_MODE          
+        jmp Loop
+;---------------------------------------------------------------
+; Initialize video mode, bank 3 and game font
+; Screen ram at $f800-$fbe7
+; Font at $f000-$f7ff
+;---------------------------------------------------------------
+!zone SetvideoModeGame
+SetvideoModeGame
+		
+	    lda #%11101100 ;%1110xxxx -> screenmem is at $3800 byte from $c000 ($f800-$fbe7)
+        sta $d018      ;%xxxx1100 -> charmem is at $3000 byte from $c000 ($f000-$f7ff)
+        lda #%11000100 ;%00, 0: Bank #3, $C000-$FFFF, 49152-65535
+        sta $dd00
+        lda #$09
+        sta VIC_CHARSET_MULTICOLOR_1
+        lda #$0d
+        sta VIC_CHARSET_MULTICOLOR_2
+        lda #$d8
+        sta VIC_CONTROL
+        lda #$0c
+        sta $d021
+        lda #$00
+        sta $d020        
+        rts
+;------------------------------------------------------------
+; Prepare sprite
+;------------------------------------------------------------
+!zone Sprite
+Sprite  
+        lda #%01000000; sprite 1 multicolor on
+		sta $d01c
+		lda #%10011111; sprite 2 expanded (score)
+		sta $d01d
+		lda #%10000000
+		sta $d017		 
+		lda #$02   ;multicolor
+		sta $d025
+		ldx #$01
+		stx $d026		
+        ldx #$00    ;sprite color
+		stx $d027   ;sprite ball color
+		stx $d028
+		stx $d029
+		stx $d02a
+		stx $d02b
+		inx
+		stx $d02e 
+		ldx #$0e
+		stx $d02d		      
+		ldx #96   ;sprite pointer score
+		stx $fbff ;sprite 2 $f800
+		stx $efff ;sprite 2 $ec00
+		ldx #128
+		stx $d010
+		ldx #$18
+		ldy #$84
+		stx $d00e
+		sty $d00f		
+	    ldx #64   ; ball sprite pointer
+	    stx $fbfd ; ball sprite pointer 0 $f800
+	    stx $effd ; ball sprite pointer 0 $ec00
+	    inx
+	    stx $fbfe ; ball sprite pointer 1 $f800
+	    stx $effe ; ball sprite pointer 1 $ec00
+	    ldx #$38+(8*2) ; ball sprite start position
+	    ldy #$32+(8*1)
+	    stx posballx
+	    sty posbally
+	    rts
+;------------------------------------------------------------
+; Anim tiles one WALL
+;------------------------------------------------------------
+!zone Animtiles
+Animtiles  
+        lda muro1+7
+		pha
+		lda muro2+7
+		pha
+		lda muro3+7
+		pha
+		ldy muro4+7		
+	    ldx #$07
+-		lda muro1-1,x
+		sta muro1,x
+		lda muro2-1,x
+		sta muro2,x
+		lda muro3-1,x
+		sta muro3,x
+		lda muro4-1,x
+		sta muro4,x
+		dex
+		bpl -
+		sty muro4
+		pla
+		sta muro3
+		pla
+		sta muro2
+		pla
+		sta muro1
+.exit	rts
+;------------------------------------------------------------
+; Anim tiles two PIPE
+;------------------------------------------------------------		
+!zone Pipe    
+Pipe       
+    	lda pipe1
+		pha
+		ldy pipe2		
+		ldx #$00
+-		lda pipe1+1,x
+		sta pipe1,x
+		lda pipe2+1,x
+		sta pipe2,x
+		inx
+		cpx #$07
+		bmi -	
+		sty pipe2+7
+		pla
+		sta pipe1+7
+-		rts 
+;-------------------------------------------------------
+;    parallax effect
+;-------------------------------------------------------
+!zone parallax
+parallax
+		jsr Pipe
+		jsr Animtiles
++		rts	 
+;-------------------------------------------------------
+;Clear sid register 
+;-------------------------------------------------------
+!zone ClearSid
+ClearSid
+	    ldx #$18
+		lda #$00
+-       sta $d400,X
+        dex
+        bpl -
+        lda #$1f       
+        sta $d418
+        rts	  
+;------------------------------------------------------------
+;clears the play area of the screen
+;------------------------------------------------------------
+!zone Clearscreen
+Clearscreen
+        ldx #00
+-       lda $df;94
+        sta SCREEN_CHAR,x
+        sta SCREEN_CHAR_2,x
+	    sta SCREEN_CHAR+200,x
+	    sta SCREEN_CHAR_2+200,x
+        sta SCREEN_CHAR+400,x
+        sta SCREEN_CHAR_2+400,x
+        sta SCREEN_CHAR+600,x
+        sta SCREEN_CHAR_2+600,x
+        sta SCREEN_CHAR+800,x
+        sta SCREEN_CHAR_2+800,x
+        lda #$00
+        sta SCREEN_COLOR,x
+        sta SCREEN_COLOR+200,x
+        sta SCREEN_COLOR+400,x
+        sta SCREEN_COLOR+600,x
+        sta SCREEN_COLOR+800,x
+        inx
+        cpx #200
+        bne -
+        rts 
+      
+;---------------------------------------------------------------
+; setup irq
+;--------------------------------------------------------------
+!zone Setupirqgame
+Setupirqgame
+			sei
+	        lda #$7f 
+		    sta $dc0d
+			sta $dd0d        
+			lda #45
+			sta $d012			
+			lda #$01 
+			sta $d01a 
+	 		lda #<Irqa
+			ldx #>Irqa
+		    sta $fffe
+			stx $ffff 
+			lda #<Nmi
+			ldx #>Nmi
+	    	sta $fffa	
+	    	stx $fffb 
+			sta $fffc
+	       	stx $fffd 
+	       	cli
+	       	rts
+Nmi			rti	       	
+!zone Copytorom
+Copytorom
+	        lda #$30
+	   	    sta $01       
+	        lda #<sprite
+	        ldy #>sprite
+	        jsr DECRUNCH
+	        lda #<font
+	        ldy #>font
+	        jsr DECRUNCH
+	        lda #<sid
+	        ldy #>sid
+	        jsr DECRUNCH
+	        lda #<SCREEN_DATA_0
+	        ldy #>SCREEN_DATA_0
+	        jsr DECRUNCH 
+	        lda #<SCREEN_DATA_1
+	        ldy #>SCREEN_DATA_1
+	        jsr DECRUNCH 
+	        lda #<SCREEN_DATA_2
+	        ldy #>SCREEN_DATA_2
+	        jsr DECRUNCH                
+	        lda #$35
+	        sta $01        	
+			rts		
+Irqa 
+            sta PARAM6
+            stx PARAM7
+            sty PARAM8
+           	dec delay	    	   	
+	    	bne nodelay 
+	    	lda #$03
+	    	sta delay
+	    	lda scrollonoff
+	    	bne nodelay  
+	    	jsr parallax
+nodelay 	
+			jsr Animate_player	
+			jsr Spikelee
+			lda removecollision0
+			bne +	   
+		    jsr Spikelee2
++		    ldx posballx
+			stx $d00a
+			stx $d00c
+			ldy posbally
+			sty $d00b
+			sty $d00d
+	    	dec scorelevel 
+			lda scorelevel
+			bne +
+			lda #time
+			sta scorelevel
+			jsr Incscore
+			jsr Printscore	    	 
++           jsr Music
+			lda #45
+            sta $d012                          	   
+	      	lda $dc0d
+	    	sta $dd0d
+	    	asl $d019
+			lda PARAM6
+            ldx PARAM7
+            ldy PARAM8
+            rti 
+            
+;-----------------------------------------------
+;  animate player (ball)
+;-----------------------------------------------			
+!zone animate_player
+Animate_player
+			lda scrollonoff
+			beq +
+			ldx #$02
+			jsr playsfx
+			jsr Explode_player
+			rts
++			inc player_anim_delay
+			lda player_anim_delay
+			cmp #$02
+			beq do_anim
+			rts
+do_anim		lda #$00
+			sta player_anim_delay
+			ldx player_anim_pointer
+			lda left_right
+			bne left
+			lda ball1_frame_r,x
+			ldy ball2_frame_r,x	      
+	        jmp store
+left        lda ball1_frame_l,x			
+			ldy ball2_frame_l,x				
+store   	sta $fbfd ; ball sprite pointer 0 
+	        sta $effd	              
+	        sty $fbfe
+	        sty $effe	        
+		    inx
+			cpx #$05
+			beq reset_panim
+			inc player_anim_pointer
+			rts
+reset_panim	
+        	ldx #$00
+			stx player_anim_pointer
+			rts	
+;-----------------------------------------------
+;  animate player explosion
+;-----------------------------------------------			
+!zone Explode_player
+Explode_player
+			inc explode_anim_delay
+			lda explode_anim_delay
+			cmp #$0b
+			beq .do_anim
+			rts
+.do_anim	
+			lda #$00
+			sta explode_anim_delay
+			ldx explode_anim_pointer
+			lda explode0,x
+			ldy explode1,x	      
+        	sta $fbfd 
+	        sta $effd	              
+	        sty $fbfe
+	        sty $effe	        
+		    inx
+			cpx #$05
+			beq .reset_panim
+			inc explode_anim_pointer
+			rts	
+.reset_panim	
+        	ldx #$00
+			stx explode_anim_pointer
+			ldx #%10000000
+			stx $d015
+			rts						
+;----------------------------------------------------
+; Controll character under sprite
+; A= char
+;----------------------------------------------------  
+!zone Checkchar
+Checkchar
+           	lda posbally
+            sec
+            sbc #50
+            lsr  
+            lsr 
+            lsr
+            tay
+            lda AKTIVER_BILDSCHIRM
+            bne screen1
+            lda screen0lo,y    
+            sta $d0
+            lda screen0hi,y    
+            sta $d1 
+            jmp cont
+screen1     lda screen1lo,y    
+            sta $d0 
+            lda screen1hi,y    
+            sta $d1                 
+cont        lda posballx
+            sec
+            sbc #24
+            lsr
+            lsr
+            lsr
+            sta $d2 
+            lda speedy
+            lsr
+            lsr
+            lsr
+            and #$07
+            cmp #$00
+            beq byte0
+            cmp #$01
+            beq byte40
+            cmp #$02
+            beq byte80
+            cmp #$03
+            bne exit 
+            jmp byte120                
+exit      	rts
+byte0       lda $d2
+			tay	
+			lda ($d0),y					
+			jsr bytecar		
+			bcc +
+			iny
+			lda ($d0),y			
+			jsr bytecar		
+			bcc +
+			iny
+			lda ($d0),y			
+			jsr bytecar			
+			bcc +
+			iny
+			lda ($d0),y			
+			jsr bytecar			
++			rts
+byte40	    lda $d2
+			clc
+			adc #40
+			tay
+			lda ($d0),y			
+			jsr bytecar		
+			bcc +
+			iny
+			lda ($d0),y			
+			jsr bytecar			
+			bcc +
+			iny
+			lda ($d0),y			
+			jsr bytecar		
+			bcc +
+			iny
+			lda ($d0),y			
+			jsr bytecar			
++			rts
+byte80      lda $d2
+			clc
+			adc #80
+			tay
+			lda ($d0),y			
+			jsr bytecar	
+			bcc +
+			iny
+			lda ($d0),y			
+			jsr bytecar			
+			bcc +
+			iny
+			lda ($d0),y			
+			jsr bytecar			
+			bcc +
+			iny
+			lda ($d0),y			
+			jsr bytecar			
++			rts
+byte120     lda $d2
+			clc
+			adc #120
+			tay
+			lda ($d0),y			
+			jsr bytecar			
+			bcc +
+			iny
+			lda ($d0),y
+			jsr bytecar			
+			bcc +
+			iny
+			lda ($d0),y			
+			jsr bytecar			
+			bcc +
+	    	iny
+			lda ($d0),y			
+			jsr bytecar			
++			rts	
+;-----------------------------------------------
+;  check sprite if collide with slope 
+;-----------------------------------------------			
+!zone bytecar         
+bytecar				
+		    cmp #64
+	        beq .hitslope
+	        cmp #65
+	        beq .hitslope
+	        cmp #66
+	        beq .hitslope
+	        cmp #67
+	        beq .hitslope
+	        cmp #68
+	        beq .hitslope1
+	        cmp #69
+	        beq .hitslope1
+	        cmp #70
+	        beq .hitslope1
+	        cmp #71
+	        beq .hitslope1
+	        sec 
+	        rts
+.hitslope	
+			ldx #$01
+		    jsr playsfx
+            lda #0
+            sta left_right
+           	clc
+			rts	
+.hitslope1
+			ldx #$01
+			jsr playsfx
+            lda	#1
+            sta left_right
+            clc
+            rts
+playsfx            
+            lda sfxtablelo,x      ;Address in A,Y
+            ldy sfxtablehi,x
+            ldx #$0e              ;Channel index in X
+            jsr $e006             ;(0, 7 or 14)            		         
+			rts
+playsfx2            
+            lda sfxtablelo,x      ;Address in A,Y
+            ldy sfxtablehi,x
+            ldx #$07              ;Channel index in X
+            jsr $e006             ;(0, 7 or 14)            		         
+			rts			
+Checklr
+			lda posballx
+			cmp #30
+			bcc exitsx
+			cmp #38
+			bcc .hitslope
+exitsx		cmp #228
+			bcc exitdx
+			cmp #236
+			bcc .hitslope1 	
+exitdx		rts
+;-----------------------------------------------
+;  check sprite if collide with stars
+;-----------------------------------------------
+!zone Spikelee
+Spikelee     			
+            lda $d2
+			tay
+			iny		
+			lda ($d0),y
+			cmp #86
+	        beq addscore	       
+	        cmp #87
+	        beq addscore	       
+	        cmp #88	       
+	        beq addscore
+	        cmp #89
+	        beq addscore
+	        lda #$00
+	        sta scoreexit
++	   	    rts
+;-----------------------------------------------
+;  check sprite if collide with spike left/right
+;-----------------------------------------------	        
+Spikelee2
+			lda $d2
+			tay
+			iny
+			lda ($d0),y
+		  	cmp #90
+	        beq endgame
+	        cmp #91
+	        beq endgame	
+	        cmp #92
+	        beq endgame
+	        cmp #93
+	        beq endgame	
+			cmp #102
+			beq endgame
+			cmp #103
+			beq endgame
+			cmp #104
+			beq endgame
+			cmp #105
+			beq endgame
+			cmp #106
+			beq endgame
+			cmp #107
+			beq endgame
+			cmp #108
+			beq endgame
+			cmp #109
+			beq endgame
+			rts	        
+endgame	     
+			ldx #$02
+			jsr playsfx2 		 
+		    lda #$01
+		 	sta scrollonoff
+		 	sta removecollision0
+		 	sta gameover
+			jsr Gameover
+			lda #$02
+			jsr Music-3
+			lda #$00
+			sta removecollision1
+			jmp aa   		      	 		  	   	 	
+addscore		
+            lda $d0
+			sec 
+			sbc #120
+			sta $d0
+			lda $d1
+			sbc #$00
+			sta $d1
+			ldy #$00
+-			lda ($d0),y
+			cmp #86
+			beq remove
+			cmp #87
+			beq remove
+			cmp #88
+			beq remove
+			cmp #89
+			beq remove
+contx		iny
+			bne -
+			ldx #$00
+			jsr playsfx2
+			lda #$01
+			sta balls
+			ldy #9    
+-			jsr Incscore
+			dey
+			bne -
+			lda #$01
+			sta scoreexit
++			rts	
+remove
+			lda #32
+			sta ($d0),y
+			jmp contx			
+				 		         
+Checkup
+			lda posbally
+			cmp #50
+			bcs exitup
+		 	;lda speedy
+		 	;sec
+		 	;sbc #1
+		 	;eor #$ff
+			;sta speedy
+			lda #$01
+		 	sta scrollonoff
+		 	sta removecollision0
+		 	sta gameover
+			jsr Gameover
+			lda #$02
+			jsr Music-3
+			lda removecollision1
+			beq exitup
+			lda #$01
+		 	sta scrollonoff
+-		    jsr Restartgame
+            jmp -	
+exitup		rts	
+		        	                 
+;----------------------------------------------------
+; Falldown ball
+; Vector base jump
+;----------------------------------------------------          	          
+!zone Falldown
+Falldown   
+	        inc frame
+	        lda frame
+	        cmp #2
+	        bne .return
+	        lda #0
+	        sta frame
+	        lda posbally
+			clc
+			adc speedy
+			sta posbally
+			lda speedy
+			clc
+			adc gravity
+			sta speedy	
++			lda left_right
+			bne .left
+.right			 
+			lda posballx
+			clc
+			adc #$03
+			sta posballx
+			jmp checkcar
+.left
+			lda posballx
+			sec
+			sbc #$03
+			sta posballx			
+checkcar    
+			lda scrollonoff
+			bne +			
+			jsr Hitspace
++			jsr Checkchar
+			bcc hitslope
+	        jsr Checklr
+	        jsr Checkup
+	        lda posbally
+			cmp #230
+			bcc .return
+			lda #230
+			sta posbally
+			lda removecollision1
+			bne exit0
+aa			lda #$00
+			sta speedy
+			lda #$01
+			sta scrollonoff	
+			jsr Gameover
+			lda #$01
+			sta gameover
+			jsr Restartgame				
+hitslope    
+            lda pressbutton
+			bne decspeedy				
+exit0   	lda speedy
+			sec
+			sbc #5
+			eor #$ff 
+			sta speedy				   							
+.return		rts  
+decspeedy   
+ 			lda #$f4
+			sta speedy
+			lda #$00
+			sta pressbutton
+			rts
+!zone Hitspace
+Hitspace  
+			jsr getcontrols
+ 	        lda keytype
+            cmp #KEY_SPACE
+            bne _exit
+_exit1      
+            lda #$01
+ 	        sta pressbutton
+ 	        rts
+_exit       jsr getfireclick
+            bcs _exit1
+            lda keytype
+            cmp #KEY_CBM     ; active cheat code
+            bne +
+            lda activecheat
+            eor #$01
+            sta activecheat
+            rts
++           lda keytype
+            cmp #KEY_Q     
+            bne + 
+            lda activecheat
+            bne +          
+            lda removecollision0 
+            eor #$01
+            sta removecollision0
++			cmp #KEY_P
+			bne +	
+			lda activecheat
+            bne +         		
+			lda removecollision1
+			eor #$01
+			sta removecollision1
++           cmp #KEY_E
+			bne +	
+			lda activecheat
+            bne +         		
+			lda #$01
+			sta scrollonoff
+            sta gameover
+            rts	
++			cmp #KEY_Y
+			bne +
+			lda activecheat
+            bne +         
+			ldy #10     ; add 10 point
+-			jsr Incscore
+			dey
+			bne -
+			jsr Printscore
++			rts
+!zone Gameover
+Gameover	lda gameover
+			bne +
+			lda #$02
+			jsr $e000
+			rts
++			ldx #$00
+- 			lda gameovertxt,x
+			sta SCREEN_CHAR+(40*11)+11,x
+			sta SCREEN_CHAR_2+(40*11)+11,x
+			lda #$00
+			sta SCREEN_COLOR+(40*11)+11,x
+			inx
+			cpx #$09
+			bne -
+			ldx #$00
+-			lda gameovertxt1,x
+			sta SCREEN_CHAR+(40*13)+6,x
+			sta SCREEN_CHAR_2+(40*13)+6,x
+			lda #$00
+			sta SCREEN_COLOR+(40*13)+6,x
+			inx
+			cpx #23-4
+			bne -
+			jsr Checkscore  
++			rts	
+!zone Restartgame
+Restartgame
+-			jsr getcontrols
+ 	        lda keytype
+            cmp #KEY_SPACE
+            bne +
+.restart    
+			lda score
+			sta tempscore
+			lda score+1
+			sta tempscore+1
+			lda score+2
+			sta tempscore+2        
+            jmp restart
++           jsr getfireclick
+            bcs .restart
+			rts
+!zone Incscore
+Incscore	
+			lda scrollonoff
+			bne +				
+			inc score+2
+			ldx #$04
+scloop		lda score+2-2,x
+			cmp #57
+			bne setscore
+			lda #$30
+			sta score+2-2,x
+			inc score+2-3,x
+setscore	dex
+ 			bpl scloop
++ 			rts
+!zone Printscore
+Printscore 		
+ 			lda $01
+			pha
+			lda #$30
+			sta $01
+			ldy #$00
+			lda score
+			jsr FonttoNumber
+-			lda $f180,x
+			sta spritescore+15,y
+			iny
+			iny
+			iny
+			inx
+			cpy #24
+			bmi -
+			ldy #$00
+            lda score+1
+			jsr FonttoNumber
+-			lda $f180,x
+			sta spritescore+16,y
+			iny
+			iny
+			iny
+			inx
+			cpy #24
+			bmi -
+			ldy #$00
+            lda score+2
+			jsr FonttoNumber
+-			lda $f180,x
+			sta spritescore+17,y
+			iny
+			iny
+			iny
+			inx
+			cpy #24
+			bmi -									
+ 			pla
+			sta $01
++			rts
+!zone FonttoNumber
+FonttoNumber
+			sec
+			sbc #48
+			asl
+			asl
+			asl
+			tax
+			rts 
+!zone Checkscore
+Checkscore
+			lda score+0
+			sec
+			lda hiscore+2
+			sbc score+2
+			lda hiscore+1
+			sbc score+1
+			lda hiscore+0
+			sbc score+0
+			bpl +
+			lda score			
+			sta hiscore
+			lda score+1			
+			sta hiscore+1
+			lda score+2			
+			sta hiscore+2
++			rts												
+;----------------------------------------------------
+;  start game
+;----------------------------------------------------
+!zone Maingame
+Maingame  	
+		     	
+		  lda #0
+          sta SCROLL_STATUS
+		  lda #RASTER_MIDDLE
+-         cmp $d012
+          bne -   
+          lda scrollonoff
+          bne +                                  
+          jsr ScrollUp 
++         jsr Falldown                
+          lda SCROLL_STATUS
+          bne +    
+          jmp Maingame                                                   
++         and #$02
+          bne .AktivenBildschirmUmschalten1                              
+          lda #RASTER_BOTTOM
+-         cmp $d012
+          bne -            
+          jmp .ScrollRegisterAktualisieren1  
+.AktivenBildschirmUmschalten1          
+          ldy AKTIVER_BILDSCHIRM
+          lda VIC_BILDSCHIRM_ZEIGER_TABELLE,y
+          sta VIC_MEMORY_CONTROL
+.ScrollRegisterAktualisieren1
+          lda SCROLL_SOFTSCROLL_WERT              
+          ora #$10      
+          sta VIC_CONTROL_MODE         
+          jmp Maingame
+;-----------------------------------------------------
+;   scrolling engine                
+;-----------------------------------------------------          
+          !source "fscrolling.a"
+          !source "fkeyboard.a"
+          !source "fintro.a"
+;-----------------------------------------------------
+;wait for the raster to reach line $f8
+;this is keeping our timing stable
+;-----------------------------------------------------
+!zone Vblank
+Vblank
+	    lda $d012
+	    bpl Vblank
+Vblank1
+	    lda $d012
+        bmi Vblank1
+	    rts  
+gameovertxt
+		!scr "game over"
+gameovertxt1
+		!scr "press fire or space"	
+lastscore
+		!scr "last score"
+bestscore
+        !scr "best score"					
+	      
+MAP_LENGHT = 254;204
+
+posballx                
+			!byte 0
+posbally          
+	 		!byte 0
+player_anim_pointer    
+		    !byte 0
+player_anim_delay 
+           	 !byte 0
+explode_anim_delay  
+			 !byte 0
+explode_anim_pointer
+ 			 !byte 0            
+scrollonoff 
+             !byte 0
+balls
+			 !byte 0             
+scoreexit
+			 !byte 0
+spike
+			!byte 0
+
+speedy		
+			!byte 0
+
+pressbutton
+ 		    !byte 0
+gameover
+			!byte 0
+
+gravity		
+			!byte 0
+
+frame		
+			!byte 0
+
+fall   
+			!byte 0
+grinder
+			!byte 0
+level
+			!byte 0			
+scorelevel
+			!byte 0						
+
+delay    
+			!byte 0
+TILE_INDEX
+			!byte 0
+	                 
+TILE_HAELFTE
+            !byte 1
+          
+AKTIVER_BILDSCHIRM
+            !byte 0
+          
+SCROLL_STATUS
+            !byte 0
+          
+SCROLL_SOFTSCROLL_WERT
+            !byte 0
+          
+TEMP_ZEILEN_DATA
+            !fill 40,0
+          
+SOFTSCROLL_ZAEHLER
+            !byte 0 
+          
+AKTUELLE_ZEILE_OBEN
+            !byte MAP_LENGHT
+          
+SCREEN_DATA_ZEIGER_OBEN
+            !word SCREEN_DATA_0 + ( MAP_LENGHT - 1 ) * 20
+          
+AKTUELLE_ZEILE_UNTEN
+            !byte 12
+          
+SCREEN_DATA_ZEIGER_UNTEN ; dati dello schermo verso il basso
+            !word SCREEN_DATA_0 + 10 * 20
+                            
+VIC_BILDSCHIRM_ZEIGER_TABELLE       
+            !byte %11101100,%10111100   
+                  
+            !source "ftiles.a"
+          
+            !source "fscreentable.a"
+fall_pos   
+            !byte 0   
+jumpball
+            !byte 0
+removecollision0
+			!byte 0   
+removecollision1
+			!byte 0
+activecheat
+			!byte 0         
+ball1_frame_r	
+			!byte 64,66,68,70,72
+			!byte 0
+			
+ball2_frame_r
+			!byte 65,67,69,71,73
+			!byte 0  
+ball1_frame_l
+			!byte 72,70,68,66,64
+			!byte 0
+			
+ball2_frame_l
+			!byte 73,71,69,67,65
+			!byte 0 
+explode0
+			!byte 	76,78,80,82,83
+explode1
+			!byte   77,79,81,81,81				 
+			
+left_right  !byte 0 ; 0=RIGHT, 1=LEFT  
+			
+score 		
+			!byte 48,48,48 ; "000"
+hiscore
+			!byte 48,48,48 ; "000"
+tempscore
+			!byte 48,48,48 ; "000"
+sfxtablelo
+			!byte <collect
+			!byte <bounce
+			!byte <burts
+sfxtablehi
+			!byte >collect
+			!byte >bounce
+			!byte >burts			
+collect		
+			!byte $08,$08,$00,$c0,$11,$c0,$10,$c3,$11,$c3,$10,$c7,$11,$c7,$10,$cc
+       		!byte $11,$cc,$10,$00
+bounce		
+			!byte $08,$08,$00,$c0,$11,$b0,$a0,$90,$00
+burts
+			!byte $09,$09,$00,$c0,$81,$b0,$11,$a0,$90,$b0,$81,$00			
+SCREEN_DATA_0          
+            !binary "level00.bin" 
+SCREEN_DATA_1
+		    !binary "level01.bin"
+SCREEN_DATA_2
+		    !binary "level02.bin"
+		    
+            !text "(c) 2014 Andrea Schincaglia and Saul Cross for rgcd compo"
+            
+SCREEN_DATA_0_0 =	$3000
+SCREEN_DATA_1_1 =   $43ec
+SCREEN_DATA_2_2	=   $57d8	
+    
+leveltbllo
+		    !byte <SCREEN_DATA_0_0
+		    !byte <SCREEN_DATA_1_1
+		    !byte <SCREEN_DATA_2_2		                                           
+leveltblhi
+		    !byte >SCREEN_DATA_0_0
+		    !byte >SCREEN_DATA_1_1
+		    !byte >SCREEN_DATA_2_2
+		    
+		    
+;------------------------------------------------------------
+; Include: bongo decruncher
+;------------------------------------------------------------ 
+		!align $100,0
+		!source "fbongo.a"
+font	!binary "font.bin"
+sprite  !binary "sprite.bin"
+sid     !binary "JustFallsid.bin"		
+		

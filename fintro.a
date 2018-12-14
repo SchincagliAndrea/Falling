@@ -1,0 +1,261 @@
+!zone Intro
+Intro		jsr SetvideoModeGame
+			lda #$1b
+			sta $d011			
+			lda #$20
+			sta $df
+			lda #$02
+			sta delay
+			jsr Clearscreen
+			jsr ClearSid
+			lda #$00
+			sta bouncevar
+			sta $d010
+			sta $d01d
+			sta $d017
+			jsr Music-3
+            jsr Setupirqintro
+            jsr Createbackground
+            jsr Printscores
+            jsr Colorbackground
+            ldx #$02
+			stx $d025
+			ldx #$01
+			stx $d026
+	        ldy #89
+	        ldx #$00
+-	        tya
+	        sta $fbf8,x
+	        lda #$00
+	        sta $d027,x
+			iny
+	        inx
+	        cpx #$08
+	        bne -  
+			ldx #$00
+	  		ldy #$00
+-    		lda sprposx,y
+			clc
+			adc #$30
+			sta $d000,x
+			iny
+			inx
+			inx
+			cpx #$0d
+			bmi -			
+			lda #%01111111
+			sta $d015
+			sta $d01c
+-			jsr getcontrols
+ 	        lda keytype
+            cmp #KEY_SPACE
+            bne +
+            rts
++           cmp #KEY_H
+ 			bne +
+ 			jsr Help
+            rts
++           jsr getfireclick
+            bcs ._exit0
+            jmp -
+._exit0
+			rts
+			
+!zone Setupirqintro
+Setupirqintro
+			sei
+            lda #<Irqintro
+			ldx #>Irqintro
+	    	sta $fffe
+			stx $ffff 
+			lda #<Nmi2
+			ldx #>Nmi2
+	    	sta $fffa
+			stx $fffb 
+			sta $fffc
+        	stx $fffd 
+			lda $d011
+			and #$7f
+			sta $d011
+			lda #$00
+			sta $d012 
+			lda #$7f 
+			sta $dc0d
+			sta $dd0d
+			lda #$01 
+			sta $d01a 
+			cli
+			rts
+Nmi2		rti
+
+!zone Irqintro
+Irqintro 
+            sta PARAM6
+            stx PARAM7
+            sty PARAM8
+			jsr Music
+			jsr Bounce
+			dec delay	    	   	
+	    	bne .nodelay 
+	    	lda #$02
+	    	sta delay
+	    	jsr Animtilesintro 
+.nodelay	
+			jsr Pipe	 
+			lda #$00
+			sta $d012		                        	   
+	      	lda $dc0d
+	    	lda $dd0d
+	    	asl $d019         
+            lda PARAM6
+            ldx PARAM7
+            ldy PARAM8
+            rti 
+!zone Bounce
+Bounce
+			ldx bouncevar
+			ldy bouncetable,x
+			sty $d001 ;F
+			inx
+			stx bouncevar
+			ldy bouncetable,x
+			sty $d003 ;A
+			inx
+            ldy bouncetable,x
+			sty $d005 ;L
+			inx 
+			ldy bouncetable,x
+			sty $d007 ;L
+			inx
+			ldy bouncetable,x
+			sty $d009 ;I
+			inx
+			ldy bouncetable,x
+			sty $d00b ;N
+			inx
+			ldy bouncetable,x
+			sty $d00d ;G			
+			ldx bouncevar
+			cpx #$3a
+			bne +
+			ldx #$00
+			stx bouncevar
++			rts
+!zone Createbackground	
+Createbackground	
+			ldx #$00
+-			lda screentile,x
+			sta SCREEN_CHAR,x
+			lda screentile+200,x
+			sta SCREEN_CHAR+200,x
+			lda screentile+400,x
+			sta SCREEN_CHAR+400,x
+			lda screentile+600,x
+			sta SCREEN_CHAR+600,x
+			lda screentile+800,x
+			sta SCREEN_CHAR+800,x
+			inx
+			cpx #200
+			bne -
+			rts
+!zone Printscores
+Printscores			
+			ldx #9
+-			lda lastscore,x
+			sta SCREEN_CHAR+40*19+4,X
+			dex
+			bpl -
+			lda score
+			sta SCREEN_CHAR+40*21+7
+			lda score+1
+			sta SCREEN_CHAR+40*21+8
+			lda score+2
+			sta SCREEN_CHAR+40*21+9
+			ldx #9
+-			lda bestscore,x
+			sta SCREEN_CHAR+40*19+26,X			
+			dex
+			bpl -
+			lda hiscore
+			sta SCREEN_CHAR+40*21+29
+			lda hiscore+1
+			sta SCREEN_CHAR+40*21+30
+			lda hiscore+2
+			sta SCREEN_CHAR+40*21+31
+			rts		
+!zone Colorbackground
+Colorbackground
+			ldx #$00
+-           lda videomap,x 
+	        tay
+	        lda colormap,y
+	        sta screen_color,x   	          
+	        lda videomap+($c8),x 
+	        tay
+	        lda colormap,y
+	        sta screen_color+($c8),x               
+	        lda videomap+($c8*2),x 
+	        tay
+	        lda colormap,y
+	        sta screen_color+($c8*2),x                  
+	        lda videomap+($c8*3),x 
+	        tay
+	        lda colormap,y
+	        sta screen_color+($c8*3),x	              
+	        lda videomap+($c8*4),x
+	        tay
+	        lda colormap,y
+	        sta screen_color+($c8*4),x         
+	        inx
+	        cpx #$c9
+	        bne -
+	        rts
+!zone Animtilesintro
+Animtilesintro 
+	        lda muro1
+			pha
+			lda muro2
+			pha
+			lda muro3
+			pha
+			ldy muro4		
+		    ldx #$00
+-		    lda muro1+1,x
+			sta muro1,x
+			lda muro2+1,x
+			sta muro2,x
+			lda muro3+1,x
+			sta muro3,x
+			lda muro4+1,x
+			sta muro4,x
+			inx
+			cpx #$08
+			bne -
+			sty muro4+7
+			pla
+			sta muro3+7
+			pla
+			sta muro2+7
+			pla
+			sta muro1+7
+.exit	    rts
+sprposx   
+			!byte 48,72,96,120,144,168,192			
+bouncevar	
+			!byte $00
+bouncetable
+			!byte $40,$40,$40,$41,$42,$43,$45,$47   
+			!byte $49,$4b,$4e,$50,$53,$56,$59,$5c   
+			!byte $60,$63,$66,$69,$6c,$6f,$71,$74   
+			!byte $76,$78,$7a,$7c,$7d,$7e,$7f,$7f   
+			!byte $7f,$7f,$7f,$7e,$7d,$7c,$7a,$78   
+			!byte $76,$74,$71,$6f,$6c,$69,$66,$63   
+			!byte $5f,$5c,$59,$56,$53,$50,$4e,$4b   
+			!byte $49,$47,$45,$43,$42,$41,$40,$40			
+			
+screentile
+			!binary "screen tile.prg"
+colormap
+			!binary "screen color.raw"
+help
+			!source "fhelp.a"			

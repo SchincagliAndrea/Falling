@@ -1,0 +1,91 @@
+!zone Help
+Help
+		lda #$00
+		sta $d015 
+		lda #$94
+		sta $df
+		jsr Clearscreen
+        ldx #$00
+-		lda titlescreentext,x
+		sta SCREEN_CHAR,x
+		lda titlescreentext+40,x
+		sta SCREEN_CHAR+40,x
+		lda titlescreentext+80,x
+		sta SCREEN_CHAR+80,x
+    	lda titlescreentext+120,x
+		sta SCREEN_CHAR+120,x
+		lda titlescreentext+160,x
+		sta SCREEN_CHAR+160,x
+	    lda titlescreentext+200,x
+		sta SCREEN_CHAR+200,x
+	    lda titlescreentext+240,x
+	    sta SCREEN_CHAR+240,x
+		lda titlescreentext+280,x
+	    sta SCREEN_CHAR+280,x
+		lda titlescreentext+320,x
+		sta SCREEN_CHAR+320,x
+		inx
+		cpx #$28
+		bne -
+		ldx #$00	
+-		lda titlescreentext+360,x
+		sta SCREEN_CHAR+360,x
+		lda titlescreentext+400,x
+    	sta SCREEN_CHAR+400,x
+    	lda titlescreentext+440,x
+    	sta SCREEN_CHAR+440,x
+    	lda titlescreentext+480,x
+    	sta SCREEN_CHAR+480,x
+    	lda titlescreentext+520,x
+    	sta SCREEN_CHAR+520,x
+    	lda titlescreentext+560,x
+    	sta SCREEN_CHAR+560,x
+    	lda titlescreentext+600,x
+    	sta SCREEN_CHAR+600,x
+    	lda titlescreentext+640,x
+    	sta SCREEN_CHAR+640,x
+    	lda titlescreentext+680,x
+    	sta SCREEN_CHAR+680,x
+    	lda titlescreentext+720,x
+    	sta SCREEN_CHAR+720,x
+    	lda titlescreentext+760,x
+    	sta SCREEN_CHAR+760,x
+    	lda titlescreentext+800,x
+    	sta SCREEN_CHAR+800,x
+    	lda titlescreentext+840,x
+    	sta SCREEN_CHAR+840,x
+		inx
+		cpx #$28
+		bne -	
+-		jsr getcontrols
+ 	    lda keytype
+        cmp #KEY_SPACE
+        bne +
+.restart 		        
+        jmp Intro
++       jsr getfireclick
+        bcs .restart
+		jmp -
+titlescreentext
+!scr"                                        "
+!scr" falling (c) 2014 wanax and saul cross  "
+!scr"                                        "
+!scr"   can you control your ball as it is   "
+!scr" falling in a tunnel full of obstacles, "
+!scr" without crashing into spikes or stars, "
+!scr"  or hitting the bottom of the screen   "
+!scr"  before a new platform appears? learn  "
+!scr"  how to modulate your bounce in order  "
+!scr" to avoid all the obstacles and remain  "
+!scr"        safe on the platforms.          "
+!scr"                                        "
+!scr" how to play:                           "
+!scr"                                        "
+!scr" press the fire button or the space bar "
+!scr"  before a collision to make your ball  "
+!scr" bounce higher.learn how to adjust the  "
+!scr"    intensity and frequency of your     "
+!scr"    bounces to keep your ball on the    "
+!scr"      platforms and stay in play.       " 
+!scr"    try to grab the brown spheres       " 
+!scr"      to get a 10 point bonus.          "   					

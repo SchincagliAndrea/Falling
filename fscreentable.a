@@ -1,0 +1,22 @@
+screen0lo
+
+	  !for i,24 {
+        !byte (<SCREEN_CHAR+i*40)
+              } 	
+             
+screen0hi
+
+       !for i,24 {
+        !byte (>SCREEN_CHAR+i*40)
+              } 	
+           
+screen1lo
+
+	!for i,24 {
+        !byte (<SCREEN_CHAR_2+i*40)
+              } 	
+screen1hi
+
+    !for i,24 {
+        !byte (>SCREEN_CHAR_2+i*40)
+              } 

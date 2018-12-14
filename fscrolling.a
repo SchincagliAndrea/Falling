@@ -1,0 +1,520 @@
+!zone ScrollUp
+ScrollUp          
+          lda SCROLL_STATUS
+          ora #$01
+          sta SCROLL_STATUS          
+          dec SOFTSCROLL_ZAEHLER
+         
+          lda SOFTSCROLL_ZAEHLER          
+          and #%00000111    
+          sta SCROLL_SOFTSCROLL_WERT         
+          cmp #4
+          beq KopiereBildschirmObereHaelfteDU
+          cmp #2
+          beq KopiereBildschirmUntereHaelfteDU
+          cmp #7
+          beq SchalteBildschirmUmDU          
+          rts
+!zone KopiereBildschirmObereHaelfteDU
+KopiereBildschirmObereHaelfteDU
+ 
+          lda AKTIVER_BILDSCHIRM
+          bne +
+          jmp KopiereScreen1NachScreen2ObenDU
++         jmp KopiereScreen2NachScreen1ObenDU
+
+!zone KopiereBildschirmUntereHaelfteDU
+KopiereBildschirmUntereHaelfteDU
+
+          lda SCREEN_DATA_ZEIGER_UNTEN
+          sta ZEROPAGE_POINTER_1
+          lda SCREEN_DATA_ZEIGER_UNTEN + 1
+          sta ZEROPAGE_POINTER_1 + 1          
+          lda AKTIVER_BILDSCHIRM
+          bne +
+          jsr KopiereScreen1NachScreen2UntenDU          
+          lda #<( SCREEN_CHAR_2 + 40 * 24 )
+          sta ZEROPAGE_POINTER_2
+          lda #>( SCREEN_CHAR_2 + 40 * 24 )
+          sta ZEROPAGE_POINTER_2 + 1          
+          lda TILE_HAELFTE
+          jmp NeueTilesEinfuegen
++         jsr KopiereScreen2NachScreen1UntenDU
+          lda #<( SCREEN_CHAR + 40 * 24 )
+          sta ZEROPAGE_POINTER_2
+          lda #>( SCREEN_CHAR + 40 * 24 )
+          sta ZEROPAGE_POINTER_2 + 1          
+          lda TILE_HAELFTE
+          jmp NeueTilesEinfuegen 
+removeball	
+			ldx #$1	
+			lda #<SCREEN_CHAR_2
+			sta $d0
+			lda #>SCREEN_CHAR_2
+			sta $d1	
+			ldy #$00
+-			lda ($d0),y
+			cmp #86
+			beq .remove
+			cmp #87
+			beq .remove
+			cmp #88
+			beq .remove
+			cmp #89
+			beq .remove
+.contx		iny
+			bne -
+			inc $d1
+			dex
+			bpl -
+		    rts	
+.remove
+			lda #32
+			sta ($d0),y
+			jmp .contx			                      
+!zone SchalteBildschirmUmDU
+SchalteBildschirmUmDU
+          
+          lda AKTIVER_BILDSCHIRM
+          eor #$01
+          sta AKTIVER_BILDSCHIRM          
+          jsr KopiereFarbRAMDU               
+          lda SCROLL_STATUS
+          ora #$02
+          sta SCROLL_STATUS          
+          jmp SpalteFertigDU
+!zone KopiereScreen1NachScreen2ObenDU
+KopiereScreen1NachScreen2ObenDU          
+.COPY_SOURCE = SCREEN_CHAR - 41
+.COPY_TARGET = SCREEN_CHAR_2 - 41
+
+          ldx #81
+          ldy #41
+-          
+          lda .COPY_SOURCE + 00 * 40,x
+          sta .COPY_TARGET + 00 * 40,y
+          lda .COPY_SOURCE + 01 * 40,x
+          sta .COPY_TARGET + 01 * 40,y
+          lda .COPY_SOURCE + 02 * 40,x
+          sta .COPY_TARGET + 02 * 40,y
+          lda .COPY_SOURCE + 03 * 40,x
+          sta .COPY_TARGET + 03 * 40,y
+          lda .COPY_SOURCE + 04 * 40,x
+          sta .COPY_TARGET + 04 * 40,y
+          lda .COPY_SOURCE + 05 * 40,x
+          sta .COPY_TARGET + 05 * 40,y
+          lda .COPY_SOURCE + 06 * 40,x
+          sta .COPY_TARGET + 06 * 40,y
+          lda .COPY_SOURCE + 07 * 40,x
+          sta .COPY_TARGET + 07 * 40,y
+          lda .COPY_SOURCE + 08 * 40,x
+          sta .COPY_TARGET + 08 * 40,y
+          lda .COPY_SOURCE + 09 * 40,x
+          sta .COPY_TARGET + 09 * 40,y
+          lda .COPY_SOURCE + 10 * 40,x
+          sta .COPY_TARGET + 10 * 40,y
+          lda .COPY_SOURCE + 11 * 40,x
+          sta .COPY_TARGET + 11 * 40,y
+          inx
+          iny
+          cpy #41 + SPALTEN_ZU_KOPIEREN
+          bne - 
+          lda balls
+		  beq +		  
+		  jsr removeball
+		  lda #$00
+		  sta balls         
++         rts
+!zone KopiereScreen2NachScreen1ObenDU
+KopiereScreen2NachScreen1ObenDU    
+.COPY_SOURCE = SCREEN_CHAR_2 - 41
+.COPY_TARGET = SCREEN_CHAR - 41
+	
+          ldx #81
+          ldy #41
+-          
+          lda .COPY_SOURCE + 00 * 40,x
+          sta .COPY_TARGET + 00 * 40,y
+          lda .COPY_SOURCE + 01 * 40,x
+          sta .COPY_TARGET + 01 * 40,y
+          lda .COPY_SOURCE + 02 * 40,x
+          sta .COPY_TARGET + 02 * 40,y
+          lda .COPY_SOURCE + 03 * 40,x
+          sta .COPY_TARGET + 03 * 40,y
+          lda .COPY_SOURCE + 04 * 40,x
+          sta .COPY_TARGET + 04 * 40,y
+          lda .COPY_SOURCE + 05 * 40,x
+          sta .COPY_TARGET + 05 * 40,y
+          lda .COPY_SOURCE + 06 * 40,x
+          sta .COPY_TARGET + 06 * 40,y
+          lda .COPY_SOURCE + 07 * 40,x
+          sta .COPY_TARGET + 07 * 40,y
+          lda .COPY_SOURCE + 08 * 40,x
+          sta .COPY_TARGET + 08 * 40,y
+          lda .COPY_SOURCE + 09 * 40,x
+          sta .COPY_TARGET + 09 * 40,y
+          lda .COPY_SOURCE + 10 * 40,x
+          sta .COPY_TARGET + 10 * 40,y
+          lda .COPY_SOURCE + 11 * 40,x
+          sta .COPY_TARGET + 11 * 40,y
+          inx
+          iny
+          cpy #41 + SPALTEN_ZU_KOPIEREN
+          bne - 
+          lda balls
+		  beq +		  
+		  jsr removeball
+		  lda #$00
+		  sta balls               
++         rts
+!zone KopiereScreen1NachScreen2UntenDU
+KopiereScreen1NachScreen2UntenDU
+.COPY_SOURCE_U = SCREEN_CHAR + 12 * 40 - 41
+.COPY_TARGET_U = SCREEN_CHAR_2 + 12 * 40 - 41
+
+          ldx #81
+          ldy #41
+-          
+          lda .COPY_SOURCE_U + 00 * 40,x
+          sta .COPY_TARGET_U + 00 * 40,y
+          lda .COPY_SOURCE_U + 01 * 40,x
+          sta .COPY_TARGET_U + 01 * 40,y
+          lda .COPY_SOURCE_U + 02 * 40,x
+          sta .COPY_TARGET_U + 02 * 40,y
+          lda .COPY_SOURCE_U + 03 * 40,x
+          sta .COPY_TARGET_U + 03 * 40,y
+          lda .COPY_SOURCE_U + 04 * 40,x
+          sta .COPY_TARGET_U + 04 * 40,y
+          lda .COPY_SOURCE_U + 05 * 40,x
+          sta .COPY_TARGET_U + 05 * 40,y
+          lda .COPY_SOURCE_U + 06 * 40,x
+          sta .COPY_TARGET_U + 06 * 40,y
+          lda .COPY_SOURCE_U + 07 * 40,x
+          sta .COPY_TARGET_U + 07 * 40,y
+          lda .COPY_SOURCE_U + 08 * 40,x
+          sta .COPY_TARGET_U + 08 * 40,y
+          lda .COPY_SOURCE_U + 09 * 40,x
+          sta .COPY_TARGET_U + 09 * 40,y
+          lda .COPY_SOURCE_U + 10 * 40,x
+          sta .COPY_TARGET_U + 10 * 40,y
+          lda .COPY_SOURCE_U + 11 * 40,x
+          sta .COPY_TARGET_U + 11 * 40,y                       
+          inx
+          iny
+          cpy #41 + SPALTEN_ZU_KOPIEREN
+          bne -          
+          rts
+!zone KopiereScreen2NachScreen1UntenDU
+KopiereScreen2NachScreen1UntenDU
+
+.COPY_SOURCE_U = SCREEN_CHAR_2 + 12 * 40 - 41
+.COPY_TARGET_U = SCREEN_CHAR + 12 * 40 - 41
+
+          ldx #81
+          ldy #41
+-          
+          lda .COPY_SOURCE_U + 00 * 40,x
+          sta .COPY_TARGET_U + 00 * 40,y
+          lda .COPY_SOURCE_U + 01 * 40,x
+          sta .COPY_TARGET_U + 01 * 40,y
+          lda .COPY_SOURCE_U + 02 * 40,x
+          sta .COPY_TARGET_U + 02 * 40,y
+          lda .COPY_SOURCE_U + 03 * 40,x
+          sta .COPY_TARGET_U + 03 * 40,y
+          lda .COPY_SOURCE_U + 04 * 40,x
+          sta .COPY_TARGET_U + 04 * 40,y
+          lda .COPY_SOURCE_U + 05 * 40,x
+          sta .COPY_TARGET_U + 05 * 40,y
+          lda .COPY_SOURCE_U + 06 * 40,x
+          sta .COPY_TARGET_U + 06 * 40,y
+          lda .COPY_SOURCE_U + 07 * 40,x
+          sta .COPY_TARGET_U + 07 * 40,y
+          lda .COPY_SOURCE_U + 08 * 40,x
+          sta .COPY_TARGET_U + 08 * 40,y
+          lda .COPY_SOURCE_U + 09 * 40,x
+          sta .COPY_TARGET_U + 09 * 40,y
+          lda .COPY_SOURCE_U + 10 * 40,x
+          sta .COPY_TARGET_U + 10 * 40,y
+          lda .COPY_SOURCE_U + 11 * 40,x
+          sta .COPY_TARGET_U + 11 * 40,y                       
+          inx
+          iny
+          cpy #41 + SPALTEN_ZU_KOPIEREN
+          bne -          
+          rts               
+       
+!zone NeueTilesEinfuegen
+NeueTilesEinfuegen
+       
+          bne .UntereTileHaelfte       
+          ldy #0
+          sty TILE_INDEX
+          ldx #0
+          stx PARAM1          
+.NaechstesTile          
+          ldy TILE_INDEX
+          lda (ZEROPAGE_POINTER_1),y
+          tax          
+          ldy PARAM1
+          lda TILE_LO,x
+          sta (ZEROPAGE_POINTER_2),y
+          iny          
+          lda TILE_RO,x
+          sta (ZEROPAGE_POINTER_2),y
+          iny          
+          inc TILE_INDEX
+          sty PARAM1          
+          cpy #40
+          bne .NaechstesTile          
+          rts         
+          
+.UntereTileHaelfte
+                  
+          ldy #0
+          sty TILE_INDEX
+          ldx #0
+          stx PARAM1          
+.NaechstesTileU 
+          ldy TILE_INDEX
+          lda (ZEROPAGE_POINTER_1),y
+          tax          
+          ldy PARAM1
+          lda TILE_LU,x
+          sta (ZEROPAGE_POINTER_2),y
+          iny          
+          lda TILE_RU,x
+          sta (ZEROPAGE_POINTER_2),y
+          iny          
+          inc TILE_INDEX
+          sty PARAM1          
+          cpy #40
+          bne .NaechstesTileU          
+          rts      
+        
+!zone NeueTileFarbeEinfuegen
+NeueTileFarbeEinfuegen
+
+          bne .UntereTileHaelfte          
+          ldy #0
+          sty TILE_INDEX
+          ldx #0
+          stx PARAM1          
+.NaechstesTile          
+          ldy TILE_INDEX
+          lda (ZEROPAGE_POINTER_1),y
+          tay
+          sty PARAM2          
+          lda TILE_LO_COLOR,y
+          ldy PARAM1
+          sta (ZEROPAGE_POINTER_2),y
+          inc PARAM1          
+          ldy PARAM2
+          lda TILE_RO_COLOR,y
+          ldy PARAM1
+          sta (ZEROPAGE_POINTER_2),y
+          inc PARAM1          
+          inx
+          inx
+          inc TILE_INDEX          
+          cpx #40
+          bne .NaechstesTile          
+          rts         
+          
+.UntereTileHaelfte          
+          ;neue Tiles unten einfügen
+          ldy #0
+          sty TILE_INDEX
+          ldx #0
+          stx PARAM1          
+.NaechstesTileU 
+          ldy TILE_INDEX
+          lda (ZEROPAGE_POINTER_1),y
+          tay
+          sty PARAM2          
+          lda TILE_LU_COLOR,y
+          ldy PARAM1
+          sta (ZEROPAGE_POINTER_2),y
+          inc PARAM1          
+          ldy PARAM2
+          lda TILE_RU_COLOR,y
+          ldy PARAM1
+          sta (ZEROPAGE_POINTER_2),y
+          inc PARAM1          
+          inx
+          inx
+          inc TILE_INDEX          
+          cpx #40
+          bne .NaechstesTileU          
+          rts
+!zone SpalteFertigDU
+SpalteFertigDU    
+          lda TILE_HAELFTE
+          eor #$01
+          sta TILE_HAELFTE
+          beq .TileFertig
+          rts
+.TileFertig
+
+          ;zeiger auf nächste Zeile setzen
+          inc AKTUELLE_ZEILE_UNTEN
+          lda AKTUELLE_ZEILE_UNTEN
+          cmp #MAP_LENGHT
+          bne +  
+          inc level          
+          lda level
+          cmp #3
+          bne nextlevel
+          ldx #0
+          stx level
+          inx
+          stx scrollonoff
+          stx gameover
+          lda #32
+          sta $df
+          jsr Clearscreen
+          jsr Gameover
+-		  jsr Restartgame
+          jmp -
+          beq cts0
+nextlevel 
+		             
+cts0      ldx level         
+          ;wrap
+          lda #0
+          sta AKTUELLE_ZEILE_UNTEN
+          lda leveltbllo,x
+          sta SCREEN_DATA_ZEIGER_UNTEN
+          lda leveltblhi,x
+          sta SCREEN_DATA_ZEIGER_UNTEN + 1
+          jmp .ZeileObenUpdaten                 
++        
+          lda SCREEN_DATA_ZEIGER_UNTEN
+          clc
+          adc #20
+          sta SCREEN_DATA_ZEIGER_UNTEN
+          lda SCREEN_DATA_ZEIGER_UNTEN + 1
+          adc #0
+          sta SCREEN_DATA_ZEIGER_UNTEN + 1
+
+.ZeileObenUpdaten
+          inc AKTUELLE_ZEILE_OBEN
+          lda AKTUELLE_ZEILE_OBEN
+          cmp #MAP_LENGHT
+          bne +   
+         ; inc level        
+         ; lda level
+         ; cmp #2
+         ; bne nextlevel0
+         ; lda #0
+         ; sta level
+         ; beq cts1
+nextlevel0
+		       
+cts1      ldx level          
+          ;wrap		 
+          lda #0
+          sta AKTUELLE_ZEILE_OBEN
+          lda leveltbllo,x
+          sta SCREEN_DATA_ZEIGER_OBEN
+          lda leveltblhi,x
+          sta SCREEN_DATA_ZEIGER_OBEN + 1
+          rts                
++          
+          lda SCREEN_DATA_ZEIGER_OBEN
+          clc
+          adc #20
+          sta SCREEN_DATA_ZEIGER_OBEN
+          lda SCREEN_DATA_ZEIGER_OBEN + 1
+          adc #0
+          sta SCREEN_DATA_ZEIGER_OBEN + 1
+          rts      
+
+!zone KopiereFarbRAMDU
+KopiereFarbRAMDU
+          ldx #81
+          jsr KopiereFarbRAMObenDU              
+          ldx #81
+          jsr KopiereFarbRAMUntenDU          
+          lda #<( SCREEN_COLOR + 40 * 24 )
+          sta ZEROPAGE_POINTER_2
+          lda #>( SCREEN_COLOR + 40 * 24 )
+          sta ZEROPAGE_POINTER_2 + 1          
+          lda SCREEN_DATA_ZEIGER_UNTEN
+          sta ZEROPAGE_POINTER_1
+          lda SCREEN_DATA_ZEIGER_UNTEN + 1
+          sta ZEROPAGE_POINTER_1 + 1          
+          lda TILE_HAELFTE
+          jmp NeueTileFarbeEinfuegen
+          
+!zone KopiereFarbRAMObenDU
+KopiereFarbRAMObenDU
+.COLOR_SOURCE = SCREEN_COLOR - 41
+.COLOR_TARGET = SCREEN_COLOR - 41
+
+          ldy #41          
+-          
+          lda .COLOR_SOURCE + 00 * 40,x
+          sta .COLOR_TARGET + 00 * 40,y
+          lda .COLOR_SOURCE + 01 * 40,x
+          sta .COLOR_TARGET + 01 * 40,y
+          lda .COLOR_SOURCE + 02 * 40,x
+          sta .COLOR_TARGET + 02 * 40,y
+          lda .COLOR_SOURCE + 03 * 40,x
+          sta .COLOR_TARGET + 03 * 40,y
+          lda .COLOR_SOURCE + 04 * 40,x
+          sta .COLOR_TARGET + 04 * 40,y
+          lda .COLOR_SOURCE + 05 * 40,x
+          sta .COLOR_TARGET + 05 * 40,y
+          lda .COLOR_SOURCE + 06 * 40,x
+          sta .COLOR_TARGET + 06 * 40,y
+          lda .COLOR_SOURCE + 07 * 40,x
+          sta .COLOR_TARGET + 07 * 40,y
+          lda .COLOR_SOURCE + 08 * 40,x
+          sta .COLOR_TARGET + 08 * 40,y
+          lda .COLOR_SOURCE + 09 * 40,x
+          sta .COLOR_TARGET + 09 * 40,y
+          lda .COLOR_SOURCE + 10 * 40,x
+          sta .COLOR_TARGET + 10 * 40,y
+          lda .COLOR_SOURCE + 11 * 40,x
+          sta .COLOR_TARGET + 11 * 40,y          
+          inx
+          iny
+          cpy #41 + SPALTEN_ZU_KOPIEREN
+          bne -          
+          rts
+!zone KopiereFarbRAMUntenDU
+KopiereFarbRAMUntenDU
+.COLOR_SOURCE = SCREEN_COLOR - 41 + 12 * 40
+.COLOR_TARGET = SCREEN_COLOR - 41 + 12 * 40
+
+          ldy #41          
+-          
+          lda .COLOR_SOURCE + 00 * 40,x
+          sta .COLOR_TARGET + 00 * 40,y
+          lda .COLOR_SOURCE + 01 * 40,x
+          sta .COLOR_TARGET + 01 * 40,y
+          lda .COLOR_SOURCE + 02 * 40,x
+          sta .COLOR_TARGET + 02 * 40,y
+          lda .COLOR_SOURCE + 03 * 40,x
+          sta .COLOR_TARGET + 03 * 40,y
+          lda .COLOR_SOURCE + 04 * 40,x
+          sta .COLOR_TARGET + 04 * 40,y
+          lda .COLOR_SOURCE + 05 * 40,x
+          sta .COLOR_TARGET + 05 * 40,y
+          lda .COLOR_SOURCE + 06 * 40,x
+          sta .COLOR_TARGET + 06 * 40,y
+          lda .COLOR_SOURCE + 07 * 40,x
+          sta .COLOR_TARGET + 07 * 40,y
+          lda .COLOR_SOURCE + 08 * 40,x
+          sta .COLOR_TARGET + 08 * 40,y
+          lda .COLOR_SOURCE + 09 * 40,x
+          sta .COLOR_TARGET + 09 * 40,y
+          lda .COLOR_SOURCE + 10 * 40,x
+          sta .COLOR_TARGET + 10 * 40,y
+          lda .COLOR_SOURCE + 11 * 40,x
+          sta .COLOR_TARGET + 11 * 40,y          
+          inx
+          iny
+          cpy #41 + SPALTEN_ZU_KOPIEREN
+          bne -
+          rts

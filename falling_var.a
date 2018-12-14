@@ -1,0 +1,67 @@
+VIC_SPRITE_X_POS        = $d000
+VIC_SPRITE_Y_POS        = $d001
+VIC_SPRITE_X_EXTEND     = $d010
+VIC_CONTROL_MODE        = $d011
+VIC_SPRITE_ENABLE       = $d015
+VIC_CONTROL             = $d016
+VIC_SPRITE_EXPAND_Y     = $d017
+VIC_MEMORY_CONTROL      = $d018
+VIC_SPRITE_PRIORITY     = $d01b
+VIC_SPRITE_MULTICOLOR   = $d01c
+VIC_SPRITE_EXPAND_X     = $d01d
+VIC_BORDER_COLOR        = $d020
+VIC_BACKGROUND_COLOR    = $d021
+VIC_SPRITE_MULTICOLOR_1 = $d025
+VIC_SPRITE_MULTICOLOR_2 = $d026
+VIC_SPRITE_COLOR        = $d027
+VIC_CHARSET_MULTICOLOR_1= $d022
+VIC_CHARSET_MULTICOLOR_2= $d023
+VIC_RASTER_POS          = $d012
+JOYSTICK_PORT_II        = $dc00
+PARAM1                  = $03
+PARAM2                  = $04
+PARAM3                  = $05
+PARAM4                  = $06
+PARAM5                  = $07
+PARAM6                  = $08
+PARAM7                  = $09
+PARAM8                  = $0A
+ZEROPAGE_POINTER_1      = $17
+ZEROPAGE_POINTER_2      = $19
+ZEROPAGE_POINTER_3      = $21
+ZEROPAGE_POINTER_4      = $23
+
+
+SCREEN_CHAR             = $f800
+SCREEN_CHAR_2           = $ec00
+SCREEN_CHAR_INTRO       = $f800+40*13
+SCREEN_COLOR            = $D800
+videomap				= SCREEN_CHAR
+screen_color			= SCREEN_COLOR
+Music                   = $e003
+SPRITE_POINTER_BASE     = SCREEN_CHAR+1016 ; $fbf8
+SPRITE_BASE             = 64+13
+savea           = $fa
+savex           = $fb
+savey           = $fc
+;------------------------------------------
+;variabili per la gestione tastiera
+;------------------------------------------	
+joystick        = $50
+prevjoy         = $51
+keyrowtbl       = $58
+keytype         = $60
+keypress        = $61
+temp6           = $3d
+muro1			=$f310
+muro2			=$f310+$08
+muro3			=$f310+$10
+muro4			=$f310+$10+$08
+pipe1			=$f000+(72*8)
+pipe2			=$f000+(73*8)
+spritescore		=$c000+(96*64)
+
+SPALTEN_ZU_KOPIEREN     = 40 
+RASTER_MIDDLE           = 143
+RASTER_BOTTOM           = 255
+time = 60
